@@ -55,7 +55,3 @@ docker compose up --build
 ```
 
 The Compose setup keeps SQLite data in `./data` and installs Playwright Chromium in the image. Provide `SECRET_KEY` and any optional API or SMTP keys through the environment. Do not commit `.env` or the database.
-
-## Project origin
-
-PriceSage AI is an independent adaptation of [Shreyansh912's price-tracker](https://github.com/Shreyansh912/price-tracker), used with permission. This version has a new repository history, branding, configuration, AI route, scraper fixes, access scoping, tests, and documentation.
