@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PriceSage AI — Agentic Price Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-body: #080c14;
+            --bg-card: rgba(18, 26, 43, 0.7);
+            --bg-card-hover: rgba(26, 38, 64, 0.85);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-focus: #3b82f6;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.25);
+            --accent: #6366f1;
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.15);
+            --danger: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --radius-xl: 18px;
+            --radius-md: 10px;
+        }
+        .floating-badge {
+            position: fixed;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            pointer-events: none;
+            z-index: -1;
+            backdrop-filter: blur(8px);
+            animation: floatBadge 12s ease-in-out infinite;
+        }
+
+        @keyframes floatBadge {
+            0% { transform: translateY(0px) translateX(0px) rotate(0deg); opacity: 0.4; }
+            50% { transform: translateY(-40px) translateX(25px) rotate(5deg); opacity: 0.9; }
+            100% { transform: translateY(0px) translateX(0px) rotate(0deg); opacity: 0.4; }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 0%, #172554 0%, var(--bg-body) 65%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 30px 20px 80px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: -100px;
+            right: 15%;
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12), transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            bottom: 10%;
+            left: 5%;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.08), transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+            animation: floatOrb 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatOrb {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(-30px) scale(1.1); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.15), transparent 70%), var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: var(--radius-xl);
+            padding: 16px 28px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+            animation: pulseIcon 3s infinite;
+        }
+
+        .brand-text h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.6; }
+        }
+
+        @keyframes pulseIcon {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(139, 92, 246, 0.6); }
+        }
+
+        @keyframes floatAvatar {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(3deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(14px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+
+        .stat-val {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #fff;
+        }
+
+        .action-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.4);
+        }
+
+        .panel-heading {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .input-field {
+            flex: 1;
+            min-width: 260px;
+            background: rgba(11, 15, 25, 0.85);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 13px 18px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            border: none;
+            padding: 13px 24px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-subtle);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: rgba(244, 63, 94, 0.15);
+            color: #fb7185;
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            box-shadow: none;
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(244, 63, 94, 0.3);
+        }
+
+        .alert-card {
+            background: var(--success-glow);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: var(--radius-xl);
+            padding: 16px 22px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .alert-card strong {
+            color: var(--success);
+        }
+
+        #chartSection {
+            display: none;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .chart-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 22px;
+        }
+
+        .product-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            background: var(--bg-card-hover);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .img-container {
+            width: 100%;
+            height: 200px;
+            background: #0b0f19;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .img-container img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+            transition: transform 0.35s ease;
+        }
+
+        .product-card:hover .img-container img {
+            transform: scale(1.06);
+        }
+
+        .stock-tag {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .tag-in { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+        .tag-out { background: rgba(244, 63, 94, 0.2); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.4); }
+
+        .card-details {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.45;
+            color: #f1f5f9;
+            margin-bottom: 14px;
+            display: -webkit-box;
+            line-clamp: 2;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .price-stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 12px 0;
+            border-top: 1px solid var(--border-subtle);
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 16px;
+        }
+
+        .price-now {
+            font-size: 24px;
+            font-weight: 800;
+            color: #60a5fa;
+        }
+
+        .price-target {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .card-btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-btn-group .btn {
+            flex: 1;
+            padding: 9px 12px;
+            font-size: 13px;
+        }
+
+        #authSection {
+            display: none;
+            max-width: 420px;
+            margin: 70px auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-xl);
+            padding: 32px;
+            backdrop-filter: blur(18px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        #appSection { display: none; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Auth Container -->
+        <div id="authSection">
+            <h2 id="authTitle" style="font-size: 24px; font-weight: 800; margin-bottom: 6px;">Sign In</h2>
+            <p id="authSubtitle" style="color: var(--text-muted); font-size: 13px; margin-bottom: 22px;">Access your custom price radar.</p>
+
+            <form id="authForm" style="display: flex; flex-direction: column; gap: 14px;">
+                <input type="text" id="authName" class="input-field" placeholder="Full Name" style="display: none;" />
+                <input type="email" id="authEmail" class="input-field" placeholder="Email Address" required />
+                <input type="password" id="authPassword" class="input-field" placeholder="Password" required />
+
+                <input type="text" id="resetToken" class="input-field" placeholder="Enter 6-digit OTP" maxlength="6" inputmode="numeric" style="display: none;" />
+                <input type="password" id="newPassword" class="input-field" placeholder="Enter New Password" style="display: none;" />
+
+                <button type="submit" class="btn" id="authSubmitBtn">Sign In</button>
+
+                <div style="display: flex; justify-content: space-between; gap: 8px; margin-top: 6px;">
+                    <button type="button" class="btn btn-outline" id="toggleAuthModeBtn" style="font-size: 12px; flex: 1; padding: 8px;">Need an account? Register</button>
+                    <button type="button" class="btn btn-outline" id="toggleForgotBtn" style="font-size: 12px; flex: 1; padding: 8px;">Forgot Password?</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Authenticated Dashboard -->
+        <div id="appSection">
+            <header>
+                <div class="brand-box">
+                    <div class="brand-icon">⚡</div>
+                    <div class="brand-text">
+                        <h1>PriceSage AI</h1>
+                        <p>Stop watching prices. Let AI watch them for you.</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="user-pill">
+                        <span class="status-dot"></span>
+                        <span id="userGreeting">Connected</span>
+                    </div>
+                    <button class="btn btn-outline" style="padding: 8px 14px; font-size: 12px;" onclick="logout()">Sign Out</button>
+                </div>
+            </header>
+
+            <!-- Pulse AI Host Welcome Card -->
+            <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.85)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: var(--radius-xl); padding: 24px 28px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to bottom, #3b82f6, #8b5cf6);"></div>
+
+                <div style="display: flex; align-items: center; gap: 18px;">
+                    <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 0 25px rgba(139, 92, 246, 0.5); animation: floatAvatar 3s ease-in-out infinite;">
+                        🤖
+                    </div>
+
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                            <h3 style="font-size: 16px; font-weight: 700; color: #fff;">Pulse Guide AI</h3>
+                            <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; color: #34d399;">
+                                <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981; animation: pulse 2s infinite;"></span>
+                                Agent Online
+                            </span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;" id="aiWelcomeMessage">
+                            Initializing price radar intelligence...
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-outline" style="padding: 8px 16px; font-size: 12px;" onclick="fetchTrackedProducts()">Run Quick Scan</button>
+                </div>
+            </div>
+
+            <!-- Futuristic Hero Banner -->
+            <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-xl); padding: 36px; margin-bottom: 30px; position: relative; overflow: hidden; backdrop-filter: blur(16px);">
+                <div style="position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(139, 92, 246, 0.15); border-radius: 50%; filter: blur(40px); pointer-events: none;"></div>
+                <div style="max-width: 650px; position: relative; z-index: 1;">
+                    <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #60a5fa; margin-bottom: 14px;">
+                        <span style="width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; box-shadow: 0 0 8px #3b82f6;"></span>
+                        Next-Gen AI Price Intelligence
+                    </div>
+                   <h2 style="font-size: 32px; font-weight: 800; line-height: 1.2; letter-spacing: -0.8px; margin-bottom: 12px; background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                        Shop smarter. Pay less. Never miss a deal.
+                    </h2>
+                    <p style="color: var(--text-muted); font-size: 14px; line-height: 1.5; margin-bottom: 0;">
+                        Monitor e-commerce price shifts automatically, analyze historical price drops, and secure target pricing instantly.
+                    </p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Tracking Items</div>
+                    <div class="stat-val" id="statTotalItems">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Price Drops</div>
+                    <div class="stat-val" id="statActiveDrops" style="color: #34d399;">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Supported Portals</div>
+                    <div class="stat-val" style="color: #60a5fa;">Amazon / Books</div>
+                </div>
+            </div>
+
+            <div class="action-panel">
+                <div class="panel-heading">Add Product to Price Radar</div>
+                <form id="trackForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="input-bar" style="margin: 0;">
+                        <input type="url" id="productUrl" class="input-field" placeholder="Paste Amazon or BooksToScrape URL here..." required />
+                        <button type="submit" class="btn" id="submitBtn">Track Product</button>
+                    </div>
+
+                    <!-- Target Price Numeric Input Field -->
+                    <div style="background: rgba(11, 15, 25, 0.7); padding: 16px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                        <label for="targetPrice" style="display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Target Price Threshold (₹)</label>
+                        <input type="number" id="targetPrice" class="input-field" placeholder="Enter target price (e.g. 2999)" value="500" min="1" step="1" required style="width: 100%;" />
+                    </div>
+                </form>
+            </div>
+
+            <div id="alertsContainer"></div>
+
+            <div id="chartSection">
+                <div class="chart-top">
+                    <h3 id="chartTitle" style="font-size: 16px; font-weight: 700;">Price Dynamics</h3>
+                    <button class="btn btn-outline" style="padding: 6px 14px; font-size: 12px;" onclick="closeChart()">Close View</button>
+                </div>
+                <canvas id="priceChart" height="85"></canvas>
+            </div>
+
+            <!-- Pulse AI Chat Assistant Section -->
+            <div style="background: var(--bg-card); backdrop-filter: blur(16px); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: var(--radius-xl); padding: 24px; margin-bottom: 30px; box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                            <span>✨</span> Meet PriceSage AI
+                        </h3>
+                        <p style="font-size: 12px; color: var(--text-muted);">Your personal shopping intelligence & price analyst.</p>
+                    </div>
+                    <span style="font-size: 11px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 3px 10px; border-radius: 20px; font-weight: 600;">Custom Python Agent</span>
+                </div>
+
+                <!-- Chat Box Screen -->
+                <div id="aiChatBox" style="background: rgba(11, 15, 25, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); height: 260px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;">
+                    <div style="display: flex; gap: 10px; max-width: 85%;">
+                        <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">✨</div>
+                        <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border-subtle); padding: 12px 16px; border-radius: 12px; font-size: 13px; line-height: 1.4; color: #e2e8f0;">
+                            Hello! I'm PriceSage AI, your price tracking assistant. How can I help you manage your tracked products today?
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggested Prompt Pills -->
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 11px; border-radius: 20px;" onclick="sendAiPrompt('What items am I currently tracking?')">📦 What am I tracking?</button>
+                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 11px; border-radius: 20px;" onclick="sendAiPrompt('Search for laptop')">💻 Search laptops</button>
+                    <button class="btn btn-outline" style="padding: 6px 12px; font-size: 11px; border-radius: 20px;" onclick="sendAiPrompt('Show price history')">📉 Price history</button>
+                </div>
+
+                <!-- Chat Input Bar -->
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="aiChatInput" class="input-field" placeholder="Ask PriceSage AI about your tracked items..." style="padding: 10px 14px; font-size: 13px;" onkeypress="if(event.key === 'Enter') handleAiChatSubmit()" />
+                    <button class="btn" style="padding: 10px 20px; font-size: 13px;" onclick="handleAiChatSubmit()">Send</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                Monitored Products
+            </div>
+
+            <div class="products-grid" id="productsGrid">
+                <p style="color: var(--text-muted);">Loading active items...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animated Background Floating Objects -->
+    <div class="floating-badge" style="top: 15%; left: 8%; animation-delay: 0s;">⚡ Live Drop: -18%</div>
+    <div class="floating-badge" style="top: 35%; right: 10%; animation-delay: 3s;">📉 Target Reached</div>
+    <div class="floating-badge" style="bottom: 20%; left: 12%; animation-delay: 6s;">PriceSage AI Scan</div>
+    <div class="floating-badge" style="bottom: 30%; right: 15%; animation-delay: 9s;">✨ Smart Buy: 94%</div>
+
+    <script>
+        const API_URL = window.location.port === "5500" ? "http://127.0.0.1:8000" : window.location.origin;
+        let chartInstance = null;
+        let currentAuthMode = "login";
+
+        const authTitle = document.getElementById("authTitle");
+        const authSubtitle = document.getElementById("authSubtitle");
+        const authSubmitBtn = document.getElementById("authSubmitBtn");
+        const toggleAuthModeBtn = document.getElementById("toggleAuthModeBtn");
+        const toggleForgotBtn = document.getElementById("toggleForgotBtn");
+
+        const inputName = document.getElementById("authName");
+        const inputEmail = document.getElementById("authEmail");
+        const inputPassword = document.getElementById("authPassword");
+        const inputResetToken = document.getElementById("resetToken");
+        const inputNewPassword = document.getElementById("newPassword");
+
+        function sendAiPrompt(text) {
+            document.getElementById("aiChatInput").value = text;
+            handleAiChatSubmit();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function setMode(mode) {
+            currentAuthMode = mode;
+
+            inputName.style.display = "none";
+            inputPassword.style.display = "block";
+            inputEmail.style.display = "block";
+            inputResetToken.style.display = "none";
+            inputNewPassword.style.display = "none";
+
+            inputPassword.required = true;
+            inputEmail.required = true;
+            inputResetToken.required = false;
+            inputNewPassword.required = false;
+
+            if (mode === "login") {
+                authTitle.innerText = "Sign In";
+                authSubtitle.innerText = "Access your custom price radar.";
+                authSubmitBtn.innerText = "Sign In";
+                toggleAuthModeBtn.innerText = "Need an account? Register";
+                toggleForgotBtn.innerText = "Forgot Password?";
+            } else if (mode === "register") {
+                authTitle.innerText = "Create Account";
+                authSubtitle.innerText = "Start monitoring price drops across portals.";
+                authSubmitBtn.innerText = "Sign Up";
+                inputName.style.display = "block";
+                toggleAuthModeBtn.innerText = "Back to Sign In";
+                toggleForgotBtn.innerText = "Forgot Password?";
+            } else if (mode === "forgot") {
+                authTitle.innerText = "Reset Password";
+                authSubtitle.innerText = "Enter your email to receive a 6-digit OTP.";
+                authSubmitBtn.innerText = "Send OTP Code";
+                inputPassword.style.display = "none";
+                inputPassword.required = false;
+                toggleAuthModeBtn.innerText = "Back to Sign In";
+                toggleForgotBtn.innerText = "Already have an OTP? Enter it";
+            } else if (mode === "reset") {
+                authTitle.innerText = "Set New Password";
+                authSubtitle.innerText = "Enter the 6-digit code sent to your email.";
+                authSubmitBtn.innerText = "Update Password";
+                inputEmail.style.display = "block";
+                inputPassword.style.display = "none";
+                inputEmail.required = true;
+                inputPassword.required = false;
+
+                inputResetToken.style.display = "block";
+                inputNewPassword.style.display = "block";
+                inputResetToken.required = true;
+                inputNewPassword.required = true;
+
+                toggleAuthModeBtn.innerText = "Back to Sign In";
+                toggleForgotBtn.innerText = "Request new code";
+            }
+        }
+
+        toggleAuthModeBtn.addEventListener("click", () => {
+            if (currentAuthMode === "login") setMode("register");
+            else setMode("login");
+        });
+
+        toggleForgotBtn.addEventListener("click", () => {
+            if (currentAuthMode === "forgot") setMode("reset");
+            else setMode("forgot");
+        });
+
+        document.getElementById("authForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            try {
+                if (currentAuthMode === "forgot") {
+                    const res = await fetch(`${API_URL}/auth/forgot-password`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: inputEmail.value.trim() })
+                    });
+                    const data = await res.json();
+                    alert(data.detail || "Reset instructions sent.");
+                    setMode("reset");
+                    return;
+                }
+
+                if (currentAuthMode === "reset") {
+                    const res = await fetch(`${API_URL}/auth/reset-password`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            email: inputEmail.value.trim(),
+                            otp: inputResetToken.value.trim(),
+                            new_password: inputNewPassword.value
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        alert(data.detail || "Password reset failed.");
+                        return;
+                    }
+                    alert(data.detail || "Password reset successful! Please sign in.");
+                    setMode("login");
+                    return;
+                }
+
+                if (currentAuthMode === "register") {
+                    const regRes = await fetch(`${API_URL}/auth/register`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            name: inputName.value,
+                            email: inputEmail.value.trim(),
+                            password: inputPassword.value
+                        })
+                    });
+                    if (!regRes.ok) {
+                        const err = await regRes.json();
+                        alert(err.detail || "Registration failed");
+                        return;
+                    }
+                }
+
+                const loginRes = await fetch(`${API_URL}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: inputEmail.value.trim(),
+                        password: inputPassword.value
+                    })
+                });
+
+                if (!loginRes.ok) {
+                    const err = await loginRes.json();
+                    alert(err.detail || "Invalid login credentials");
+                    return;
+                }
+
+                const data = await loginRes.json();
+                localStorage.setItem("access_token", data.access_token);
+                initApp();
+
+            } catch (err) {
+                alert("Network communication error.");
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", initApp);
+
+        function getToken() { return localStorage.getItem("access_token"); }
+
+        function authHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${getToken()}`
+            };
+        }
+
+        async function initApp() {
+            const token = getToken();
+            if (!token) {
+                showAuth();
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/auth/me`, { headers: authHeaders() });
+                if (!res.ok) throw new Error("Invalid session");
+                const user = await res.json();
+                document.getElementById("userGreeting").innerText = `${user.name}`;
+                document.getElementById("aiWelcomeMessage").innerText = `Welcome back, ${user.name}! I'm actively monitoring your active radar items for price drops.`;
+                showDashboard();
+                fetchTrackedProducts();
+                fetchAlerts();
+            } catch {
+                logout();
+            }
+        }
+
+        function showAuth() {
+            document.getElementById("authSection").style.display = "block";
+            document.getElementById("appSection").style.display = "none";
+        }
+
+        function showDashboard() {
+            document.getElementById("authSection").style.display = "none";
+            document.getElementById("appSection").style.display = "block";
+        }
+
+        function logout() {
+            localStorage.removeItem("access_token");
+            showAuth();
+        }
+
+        document.getElementById("trackForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById("submitBtn");
+            btn.innerText = "Analyzing...";
+            btn.disabled = true;
+
+            const url = document.getElementById("productUrl").value;
+            const target_price = parseFloat(document.getElementById("targetPrice").value);
+
+            try {
+                const res = await fetch(`${API_URL}/products/`, {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ url, target_price })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert("Error: " + (err.detail || err.error || "Failed to process item"));
+                    return;
+                }
+
+                document.getElementById("trackForm").reset();
+                fetchTrackedProducts();
+                fetchAlerts();
+            } catch (err) {
+                alert("Network communication error.");
+            } finally {
+                btn.innerText = "Track Product";
+                btn.disabled = false;
+            }
+        });
+
+        async function fetchTrackedProducts() {
+            try {
+                const res = await fetch(`${API_URL}/products/`, { headers: authHeaders() });
+                const items = await res.json();
+                const grid = document.getElementById("productsGrid");
+                document.getElementById("statTotalItems").innerText = items.length;
+                grid.innerHTML = "";
+
+                if (items.length === 0) {
+                    grid.innerHTML = `<p style="color: var(--text-muted); grid-column: 1/-1;">No products monitored yet. Enter a product link to begin.</p>`;
+                    return;
+                }
+
+                items.forEach(item => {
+                    const p = item.product;
+                    const card = document.createElement("div");
+                    card.className = "product-card";
+                    card.innerHTML = `
+                        <div class="img-container">
+                            <span class="stock-tag ${p.availability ? 'tag-in' : 'tag-out'}">
+                                ${p.availability ? '● In Stock' : '● Out of Stock'}
+                            </span>
+                            <img src="${p.image_url || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="${p.name}">
+                        </div>
+                        <div class="card-details">
+                            <div class="card-title" title="${p.name}">${p.name}</div>
+                            <div class="price-stats-bar">
+                                <div>
+                                    <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Current Price</div>
+                                    <div class="price-now">${p.current_price} <span style="font-size: 13px; font-weight: 500; color: var(--text-muted);">${p.currency}</span></div>
+                                </div>
+                                <div class="price-target">
+                                    <div>Target Price</div>
+                                    <div style="font-weight: 700; color: #cbd5e1;">${item.target_price} ${p.currency}</div>
+                                </div>
+                            </div>
+                            <div class="card-btn-group">
+                                <button class="btn btn-outline" onclick="loadHistory(${p.id}, '${p.name.replace(/'/g, "\\'")}')">Trend</button>
+                                <button class="btn btn-danger" onclick="untrackProduct(${p.id})">Untrack</button>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Failed to load products:", err);
+            }
+        }
+
+        async function fetchAlerts() {
+            try {
+                const res = await fetch(`${API_URL}/products/alerts`, { headers: authHeaders() });
+                const alerts = await res.json();
+                const container = document.getElementById("alertsContainer");
+                document.getElementById("statActiveDrops").innerText = alerts.length;
+                container.innerHTML = "";
+
+                alerts.forEach(a => {
+                    const el = document.createElement("div");
+                    el.className = "alert-card";
+                    el.innerHTML = `
+                        <div>
+                            <strong>Target Reached:</strong> ${a.product_name} dropped to <strong>${a.current_price} ${a.currency}</strong> (Savings: ${a.savings} ${a.currency})
+                        </div>
+                        <a href="${a.product_url}" target="_blank" class="btn" style="padding: 6px 14px; font-size: 12px; text-decoration: none;">Buy Deal</a>
+                    `;
+                    container.appendChild(el);
+                });
+            } catch (err) {
+                console.error("Failed to load alerts:", err);
+            }
+        }
+
+        async function loadHistory(productId, title) {
+            try {
+                const res = await fetch(`${API_URL}/products/${productId}/history`, { headers: authHeaders() });
+                const data = await res.json();
+
+                document.getElementById("chartSection").style.display = "block";
+                document.getElementById("chartTitle").innerText = `Price Trend: ${title}`;
+
+                const labels = data.history.map(pt => new Date(pt.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                const prices = data.history.map(pt => pt.price);
+
+                const ctx = document.getElementById("priceChart").getContext("2d");
+
+                if (chartInstance) chartInstance.destroy();
+
+                const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, "rgba(59, 130, 246, 0.45)");
+                gradient.addColorStop(1, "rgba(59, 130, 246, 0.0)");
+
+                chartInstance = new Chart(ctx, {
+                    type: "line",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `Price (${data.currency})`,
+                            data: prices,
+                            borderColor: "#3b82f6",
+                            borderWidth: 2.5,
+                            backgroundColor: gradient,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 4,
+                            pointBackgroundColor: "#60a5fa",
+                            pointHoverRadius: 7,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                                ticks: { color: '#94a3b8' }
+                            },
+                            y: {
+                                beginAtZero: false,
+                                grid: { color: 'rgba(255, 255, 255, 0.06)' },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    callback: val => `${val} ${data.currency}`
+                                }
+                            }
+                        }
+                    }
+                });
+
+                window.scrollTo({ top: document.getElementById("chartSection").offsetTop - 20, behavior: 'smooth' });
+            } catch (err) {
+                alert("Could not load price trend data.");
+            }
+        }
+
+        function closeChart() {
+            document.getElementById("chartSection").style.display = "none";
+        }
+
+        async function untrackProduct(productId) {
+            if (!confirm("Remove this item from your radar?")) return;
+            try {
+                const res = await fetch(`${API_URL}/products/${productId}/track`, {
+                    method: "DELETE",
+                    headers: authHeaders()
+                });
+                if (res.ok) {
+                    fetchTrackedProducts();
+                    fetchAlerts();
+                }
+            } catch (err) {
+                alert("Untrack request failed.");
+            }
+        }
+
+        async function handleAiChatSubmit() {
+            const input = document.getElementById("aiChatInput");
+            const query = input.value.trim();
+            if (!query) return;
+
+            const chatBox = document.getElementById("aiChatBox");
+
+            // 1. Display User Message
+            const userMsg = document.createElement("div");
+            userMsg.style.cssText = "display: flex; justify-content: flex-end; margin-left: auto; max-width: 85%; margin-bottom: 10px;";
+            userMsg.innerHTML = `
+                <div style="background: #2563eb; color: #fff; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.4;">
+                    ${escapeHtml(query)}
+                </div>
+            `;
+            chatBox.appendChild(userMsg);
+            input.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 2. Display Typing Indicator
+            const typingMsg = document.createElement("div");
+            typingMsg.id = "aiTypingIndicator";
+            typingMsg.style.cssText = "display: flex; gap: 10px; max-width: 85%; margin-bottom: 10px;";
+            typingMsg.innerHTML = `
+                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">✨</div>
+                <div style="background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border-subtle); padding: 12px 16px; border-radius: 12px; font-size: 13px; color: var(--text-muted);">
+                    PriceSage AI is checking your data...
+                </div>
+            `;
+            chatBox.appendChild(typingMsg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const res = await fetch(`${API_URL}/api/agent/chat`, {
+                    method: "POST",
+                    headers: authHeaders(),
+                    body: JSON.stringify({ message: query })
+                });
+
+                const data = await res.json();
+
+                const indicator = document.getElementById("aiTypingIndicator");
+                if (indicator) indicator.remove();
+                if (!res.ok) throw new Error(data.detail || "AI assistant request failed.");
+
+                let htmlContent = `<div style="margin-bottom: 6px;">${escapeHtml(data.response || "Here are your results:")}</div>`;
+
+                if (data.data) {
+                    try {
+                        let parsedData = typeof data.data === 'string' ? JSON.parse(data.data) : data.data;
+
+                        if (Array.isArray(parsedData) && parsedData.length > 0) {
+                            htmlContent += `<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">`;
+                            parsedData.forEach(item => {
+                                const name = item.name || item.product_name || "Product Item";
+                                const price = item.price || item.current_price || item.target_price || "N/A";
+                                const currency = item.currency || "₹";
+                                const stock = item.availability || (item.is_alert_active ? "Alert Active" : "");
+
+                                htmlContent += `
+                                    <div style="background: rgba(11, 15, 25, 0.7); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 600; color: #f8fafc; font-size: 12px;">${escapeHtml(name)}</div>
+                                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${stock}</div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 700; color: #60a5fa; font-size: 13px;">${price} ${currency}</div>
+                                            ${item.url ? `<a href="${item.url}" target="_blank" style="font-size: 10px; color: #38bdf8; text-decoration: none;">View Link ↗</a>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            htmlContent += `</div>`;
+                        } else {
+                            htmlContent += `<pre style="background: #090d16; padding: 8px; border-radius: 6px; margin-top: 6px; font-size: 11px; overflow-x: auto; color: #60a5fa;">${escapeHtml(typeof data.data === 'string' ? data.data : JSON.stringify(data.data, null, 2))}</pre>`;
+                        }
+                    } catch {
+                        htmlContent += `<pre style="background: #090d16; padding: 8px; border-radius: 6px; margin-top: 6px; font-size: 11px; overflow-x: auto; color: #60a5fa;">${escapeHtml(data.data)}</pre>`;
+                    }
+                }
+
+                const aiMsg = document.createElement("div");
+                aiMsg.style.cssText = "display: flex; gap: 10px; max-width: 90%; margin-bottom: 10px; animation: fadeIn 0.3s ease;";
+                aiMsg.innerHTML = `
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;">✨</div>
+                    <div style="background: rgba(30, 41, 59, 0.9); border: 1px solid var(--border-subtle); padding: 12px 16px; border-radius: 12px; font-size: 13px; line-height: 1.4; color: #e2e8f0; width: 100%;">
+                        ${htmlContent}
+                    </div>
+                `;
+                chatBox.appendChild(aiMsg);
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+            } catch (err) {
+                const indicator = document.getElementById("aiTypingIndicator");
+                if (indicator) indicator.remove();
+                alert(err.message || "Failed to communicate with PriceSage AI.");
+            }
+        }
+    </script>
+</body>
+</html>

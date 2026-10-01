@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////data/pricesage.db
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - SECRET_KEY=${SECRET_KEY:-development-only-change-before-deployment}
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM:-}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
