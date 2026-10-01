@@ -7,7 +7,7 @@ An agentic price tracker built with Python, FastAPI, SQLAlchemy, and a browser d
 - Account registration and JWT based sign in.
 - Product tracking with an initial price history record and periodic price checks.
 - Target price alerts by email when SMTP is configured. Without SMTP, alerts use a logged dry run.
-- A tool calling assistant powered by Groq for tracked products, searches, history, and adding a product. The rest of the app runs without an AI key.
+- A tool calling assistant powered by Groq for tracked products, searches, history, and adding a product. It can process multiple tool calls, use their results in a final answer, and continue a user's conversation. The rest of the app runs without an AI key.
 - SQLite by default, with PostgreSQL supported through `DATABASE_URL`.
 - FastAPI documentation at `/docs` and a dashboard at `/`.
 
@@ -44,7 +44,7 @@ The tests use an in-memory SQLite database and a mocked scraper. They do not cal
 1. `app/scrapers/` selects an adapter for a supported URL and extracts a product name, price, currency, availability, and image.
 2. `app/services/product_service.py` stores one product per URL and creates a tracking record for each user.
 3. `app/scheduler/` runs periodic checks; `app/services/tracker_service.py` records new prices and evaluates target alerts.
-4. `app/agent/` registers database tools. The authenticated `/api/agent/chat` endpoint passes the current user's identity to those tools, so tracked product searches and history are scoped to that user.
+4. `app/agent/` registers database tools. The authenticated `/api/agent/chat` endpoint passes the current user's identity to those tools, returns tool results to the model, and stores user and assistant messages for follow-up questions. Tracked product searches and history are scoped to that user.
 5. `frontend/index.html` calls the FastAPI endpoints for authentication, tracking, history, alerts, and chat.
 
 ## Docker
