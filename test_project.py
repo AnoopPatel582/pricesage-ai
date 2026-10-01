@@ -10,8 +10,9 @@ from fastapi import HTTPException
 
 from app.agent.custom_agent import get_price_history_tool, search_products_tool
 from app.api import agent as agent_api
+from app.auth.dependencies import get_current_user
 from app.main import app
-from app.database.session import Base
+from app.database.session import Base, get_db
 from app.models import PriceHistory, Product, TrackedProduct, User
 from app.models.conversation import Conversation, Message  # noqa: F401
 from app.scrapers.base import ScrapedProduct
@@ -52,6 +53,45 @@ def test_dashboard_and_health_routes():
     client = TestClient(app)
     assert client.get("/health").json() == {"status": "healthy"}
     assert "PriceSage AI" in client.get("/").text
+
+
+def test_price_history_endpoint_matches_chart_and_scopes_user(db):
+    owner = User(name="A", email="a@example.com", password_hash="unused")
+    other = User(name="B", email="b@example.com", password_hash="unused")
+    product = Product(
+        name="Sample Book",
+        url="https://books.toscrape.com/sample",
+        current_price=45.0,
+        currency="GBP",
+        availability=True,
+    )
+    db.add_all([owner, other, product])
+    db.flush()
+    db.add_all([
+        TrackedProduct(user_id=owner.id, product_id=product.id, target_price=40.0),
+        PriceHistory(product_id=product.id, price=51.77),
+        PriceHistory(product_id=product.id, price=45.0),
+    ])
+    db.commit()
+
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_current_user] = lambda: owner
+    try:
+        client = TestClient(app)
+        response = client.get(f"/products/{product.id}/history")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["currency"] == "GBP"
+        assert data["current_price"] == 45.0
+        assert data["lowest_price"] == 45.0
+        assert data["highest_price"] == 51.77
+        assert [point["price"] for point in data["history"]] == [51.77, 45.0]
+        assert all("recorded_at" in point for point in data["history"])
+
+        app.dependency_overrides[get_current_user] = lambda: other
+        assert client.get(f"/products/{product.id}/history").status_code == 404
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_tracking_reuses_product_and_scopes_agent_data(db, monkeypatch):

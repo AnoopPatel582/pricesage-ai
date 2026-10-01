@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.models.product import Product, TrackedProduct, PriceHistory
+from app.models.product import Product, TrackedProduct
 from app.models.user import User
+from app.schemas.history import PriceHistoryStats
 from app.schemas.product_api import (
     ProductCreateRequest,
     ProductResponse,
@@ -14,22 +15,21 @@ from app.schemas.alert import AlertResponse
 from app.scrapers.exceptions import ScraperException
 from app.services.product_service import ProductService
 from app.services.alert_service import AlertService
+from app.services.history_service import HistoryService
 from app.auth.dependencies import get_current_user
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
-@router.get("/{product_id}/history")
-def get_product_price_history(product_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+@router.get("/{product_id}/history", response_model=PriceHistoryStats)
+def get_product_price_history(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     track = db.query(TrackedProduct).filter_by(user_id=current_user.id, product_id=product_id).first()
     if not track:
         raise HTTPException(status_code=404, detail="Tracked product not found")
-    history = db.query(PriceHistory).filter(PriceHistory.product_id == product_id).order_by(PriceHistory.recorded_at.asc()).all()
-    return [
-        {
-            "price": h.price,
-            "recorded_at": h.recorded_at.isoformat()
-        } for h in history
-    ]
+    return HistoryService.get_product_price_history(db, product_id)
 
 
 @router.post("/", response_model=TrackedProductResponse, status_code=status.HTTP_201_CREATED)
